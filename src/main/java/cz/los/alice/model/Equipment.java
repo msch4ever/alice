@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class Equipment {
-    String name;
-    Integer quantity;
+    private String name;
+    private Integer quantity;
 }

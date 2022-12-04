@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class Crew {
-    String name;
-    Integer assignment;
+    private String name;
+    private Integer assignment;
 }
