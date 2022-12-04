@@ -22,6 +22,9 @@ public class AliceController {
 
     @GetMapping("/process")
     public ProcessingResult process() {
-        return service.process();
+        long start = System.currentTimeMillis();
+        ProcessingResult process = service.process();
+        System.out.println(System.currentTimeMillis() - start);
+        return process;
     }
 }
