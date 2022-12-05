@@ -18,8 +18,7 @@ public class AliceService {
     public ProcessingResult process() {
         List<Task> tasks = parser.parseInputFile();
         CpmProcessor cpm = new CpmProcessor(tasks);
-        cpm.applyCpm();
 
-        return new ProcessingResult(tasks.toString());
+        return cpm.applyCpm();
     }
 }
