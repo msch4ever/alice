@@ -1,9 +1,13 @@
 package cz.los.alice.model;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
 
-@Data
+@Value
+@Builder
 public class Crew {
-    private String name;
-    private Integer assignment;
+    String name;
+    @NonNull
+    Integer assignment;
 }

@@ -1,35 +1,39 @@
 package cz.los.alice.cpm;
 
 import cz.los.alice.dto.ProcessingResult;
+import cz.los.alice.model.Crew;
 import cz.los.alice.model.Task;
+import org.springframework.util.ObjectUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 public class CpmProcessor {
 
-    private final List<Task> allTasks;
-    private final List<Task> rootTasks;
-    private final List<Task> terminalTasks;
+    private Set<Task> allTasks;
+    private Set<Task> rootTasks;
+    private Set<Task> terminalTasks;
     private Map<String, List<Task>> predecessorsByTask;
     private Map<String, List<Task>> successorsByTask;
     private final Map<Task, Node> nodesByTask;
 
     public CpmProcessor(List<Task> allTasks) {
-        this.allTasks = new ArrayList<>(allTasks);
+        this.allTasks = new HashSet<>(allTasks);
         this.rootTasks = allTasks.stream()
                 .filter(it -> it.getDependencies().isEmpty())
-                .collect(toList());
+                .collect(toSet());
         this.terminalTasks = allTasks.stream()
                 .filter(it -> {
                     for (var task : allTasks) {
@@ -39,7 +43,7 @@ public class CpmProcessor {
                     }
                     return true;
                 })
-                .collect(Collectors.toUnmodifiableList());
+                .collect(toSet());
         this.nodesByTask = new HashMap<>();
     }
 
@@ -74,36 +78,45 @@ public class CpmProcessor {
         Task startTask = Task.builder()
                 .taskCode("START")
                 .duration(0)
+                .crew(Crew.builder()
+                        .assignment(0)
+                        .build())
                 .operationName("START")
                 .dependencies(Collections.emptyList())
                 .build();
         createDependencyOnStartTaskForRootTasks(startTask);
-        allTasks.add(0, startTask);
+        allTasks.add(startTask);
         return startTask;
     }
 
     private void createDependencyOnStartTaskForRootTasks(Task startTask) {
+        Set<Task> modifiedRootTasks = new HashSet<>();
         for (var rootTask : rootTasks) {
-            rootTask.setDependencies(List.of(startTask.getTaskCode()));
+            modifiedRootTasks.add(
+                    rootTask.toBuilder()
+                            .dependencies(List.of(startTask.getTaskCode()))
+                            .build());
         }
+        allTasks.removeAll(rootTasks);
+        rootTasks.clear();
+        rootTasks = modifiedRootTasks;
+        allTasks.addAll(rootTasks);
     }
 
     private Task prepareFinishPoint() {
         Task finishTask = Task.builder()
                 .taskCode("FINISH")
                 .duration(0)
+                .crew(Crew.builder()
+                        .assignment(0)
+                        .build())
                 .operationName("FINISH")
+                .dependencies(terminalTasks.stream()
+                        .map(Task::getTaskCode)
+                        .collect(toList()))
                 .build();
-        createDependencyForTerminalTasks(finishTask);
         allTasks.add(finishTask);
         return finishTask;
-    }
-
-    private void createDependencyForTerminalTasks(Task finishTask) {
-        finishTask.setDependencies(
-                terminalTasks.stream()
-                        .map(Task::getTaskCode)
-                        .collect(toList()));
     }
 
     private void buildPredecessorsByTask() {
@@ -144,13 +157,13 @@ public class CpmProcessor {
     private void createLinksBetweenNodes(Collection<Node> allNodes) {
         for (var currentNode : allNodes) {
             String taskCode = currentNode.getTask().getTaskCode();
-            List<Node> predecessors = predecessorsByTask.get(taskCode).stream()
+            Set<Node> predecessors = predecessorsByTask.get(taskCode).stream()
                     .map(nodesByTask::get)
-                    .collect(toList());
+                    .collect(toSet());
             currentNode.setPredecessors(predecessors);
-            List<Node> successors = successorsByTask.get(taskCode).stream()
+            Set<Node> successors = successorsByTask.get(taskCode).stream()
                     .map(nodesByTask::get)
-                    .collect(toList());
+                    .collect(toSet());
             currentNode.setSuccessors(successors);
         }
     }
@@ -160,12 +173,12 @@ public class CpmProcessor {
         startNode.setEarliestStart(0);
         startNode.setEarliestFinish(0);
         startNode.setResolvedForward(true);
-        startNode.setPredecessors(Collections.emptyList());
+        startNode.setPredecessors(Collections.emptySet());
     }
 
     private void processForwardDirection(Node startingNode) {
         Node current = findUnresolvedSuccessorForwardDirection(startingNode)
-                .orElseThrow(() -> new IllegalStateException("Starting node should have at least one unresolvedSuccessor"));
+                .orElseThrow(() -> new RuntimeException("Starting node should have at least one unresolvedSuccessor"));
         while (true) {
             if (isNodeValidForForwardCalculation(current) && !current.isResolvedForward()) {
                 calculateEarliestStartAndFinish(current);
@@ -187,35 +200,33 @@ public class CpmProcessor {
             }
             current = findUnresolvedSuccessorForwardDirection(current)
                     .orElseThrow(() ->
-                            new IllegalStateException("Just calculated Node with successors cannot have resolved successors"));
+                            new RuntimeException("Just calculated Node with successors cannot have resolved successors"));
         }
         nodesByTask.values().stream().filter(it -> !it.isResolvedForward()).findFirst().ifPresent((brokenNode) -> {
-            throw new IllegalStateException("All nodes should be in resolved state by now! Broken node:" + brokenNode);
+            throw new RuntimeException("All nodes should be in resolved state by now! Broken node:" + brokenNode);
         });
     }
 
     private boolean hasNoSuccessors(Node node) {
-        List<Node> successors = node.getSuccessors();
-        return successors == null || successors.isEmpty();
+        return ObjectUtils.isEmpty(node.getSuccessors());
     }
 
     private boolean hasNoPredecessors(Node node) {
-        List<Node> predecessors = node.getPredecessors();
-        return predecessors == null || predecessors.isEmpty();
+        return ObjectUtils.isEmpty(node.getPredecessors());
     }
 
     private static Node findUnresolvedPredecessorForwardDirection(Node node) {
         return node.getPredecessors().stream()
                 .filter(it -> !it.isResolvedForward())
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Unresolved Node should have unresolved predecessor"));
+                .orElseThrow(() -> new RuntimeException("Unresolved Node should have unresolved predecessor"));
     }
 
     private static Node findUnresolvedSuccessorBackwardDirection(Node node) {
         return node.getSuccessors().stream()
                 .filter(it -> !it.isResolvedBackward())
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Unresolved Node should have unresolved successor"));
+                .orElseThrow(() -> new RuntimeException("Unresolved Node should have unresolved successor"));
     }
 
     private static Optional<Node> findUnresolvedSuccessorForwardDirection(Node node) {
@@ -275,7 +286,7 @@ public class CpmProcessor {
         endingNode.setSlack(0);
         endingNode.setResolvedBackward(true);
         Node current = findUnresolvedPredecessorBackwardDirection(endingNode)
-                .orElseThrow(() -> new IllegalStateException("Ending node should have at least one unresolved predecessor"));
+                .orElseThrow(() -> new RuntimeException("Ending node should have at least one unresolved predecessor"));
         while (true) {
             if (isNodeValidForBackwardCalculation(current) && !current.isResolvedBackward()) {
                 calculateLatestStartAndFinish(current);
@@ -297,10 +308,10 @@ public class CpmProcessor {
             }
             current = findUnresolvedPredecessorBackwardDirection(current)
                     .orElseThrow(() ->
-                            new IllegalStateException("Just calculated Node with predecessors cannot have resolved predecessors"));
+                            new RuntimeException("Just calculated Node with predecessors cannot have resolved predecessors"));
         }
         nodesByTask.values().stream().filter(it -> !it.isResolvedBackward()).findFirst().ifPresent((brokenNode) -> {
-            throw new IllegalStateException("All nodes should be in resolved state by now! Broken node:" + brokenNode);
+            throw new RuntimeException("All nodes should be in resolved state by now! Broken node:" + brokenNode);
         });
     }
 }

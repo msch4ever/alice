@@ -3,7 +3,7 @@ package cz.los.alice.service;
 import cz.los.alice.cpm.CpmProcessor;
 import cz.los.alice.dto.ProcessingResult;
 import cz.los.alice.model.Task;
-import cz.los.alice.utils.TaskParser;
+import cz.los.alice.inputProcessing.TaskParser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

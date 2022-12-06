@@ -1,27 +1,28 @@
 package cz.los.alice.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.Value;
 
 import java.util.List;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Value
+@Builder(toBuilder = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Task {
 
+    @NonNull
     @EqualsAndHashCode.Include
-    private String taskCode;
-    private String operationName;
-    private String elementName;
-    private Integer duration;
-    private Crew crew;
-    private List<Equipment> equipment;
-    private List<String> dependencies;
+    String taskCode;
+    String operationName;
+    String elementName;
+    @NonNull
+    Integer duration;
+    @NonNull
+    Crew crew;
+    List<Equipment> equipment;
+    @NonNull
+    List<String> dependencies;
 
 }
