@@ -17,10 +17,12 @@ public class Node {
     private UUID id;
 
     private Task task;
+    private Integer duration;
+
     private Integer earliestStart;
     private Integer earliestFinish;
     private boolean resolvedForward;
-    private Integer duration;
+
     private Integer latestStart;
     private Integer latestFinish;
     private boolean resolvedBackward;
@@ -34,5 +36,48 @@ public class Node {
         this.id = UUID.randomUUID();
         this.task = task;
         this.duration = task.getDuration();
+    }
+
+    public boolean calculateEarliestStartAndFinish() {
+        if (isValidForForwardCalculation()) {
+            predecessors.stream()
+                    .map(Node::getEarliestFinish)
+                    .max(Integer::compareTo)
+                    .ifPresent(this::setEarliestStart);
+            setEarliestFinish(duration + earliestStart);
+            resolvedForward = true;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean calculateLatestStartAndFinish() {
+        if (isValidForBackwardCalculation()) {
+            successors.stream()
+                    .map(Node::getLatestStart)
+                    .min(Integer::compareTo)
+                    .ifPresent(this::setLatestFinish);
+            latestStart = latestFinish - duration;
+            slack = latestFinish - earliestFinish;
+            resolvedBackward = true;
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isValidForForwardCalculation() {
+        boolean allPredecessorsResolved = predecessors.stream()
+                .filter(other -> other.getEarliestFinish() == null)
+                .findFirst()
+                .isEmpty();
+        return allPredecessorsResolved;
+    }
+
+    public boolean isValidForBackwardCalculation() {
+        boolean allSuccessorsResolved = successors.stream()
+                .filter(other -> other.getLatestStart() == null)
+                .findFirst()
+                .isEmpty();
+        return allSuccessorsResolved;
     }
 }
