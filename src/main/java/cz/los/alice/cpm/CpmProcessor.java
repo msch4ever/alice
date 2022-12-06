@@ -29,11 +29,20 @@ public class CpmProcessor {
     private Map<String, List<Task>> successorsByTask;
     private final Map<Task, Node> nodesByTask;
 
-    public CpmProcessor(List<Task> allTasks) {
+    public CpmProcessor(Set<Task> allTasks) {
         this.allTasks = new HashSet<>(allTasks);
+        initRootTasks(allTasks);
+        initTerminalTasks(allTasks);
+        this.nodesByTask = new HashMap<>();
+    }
+
+    private void initRootTasks(Set<Task> allTasks) {
         this.rootTasks = allTasks.stream()
                 .filter(it -> it.getDependencies().isEmpty())
                 .collect(toSet());
+    }
+
+    private void initTerminalTasks(Set<Task> allTasks) {
         this.terminalTasks = allTasks.stream()
                 .filter(it -> {
                     for (var task : allTasks) {
@@ -44,7 +53,6 @@ public class CpmProcessor {
                     return true;
                 })
                 .collect(toSet());
-        this.nodesByTask = new HashMap<>();
     }
 
     public ProcessingResult applyCpm() {
@@ -98,7 +106,6 @@ public class CpmProcessor {
                             .build());
         }
         allTasks.removeAll(rootTasks);
-        rootTasks.clear();
         rootTasks = modifiedRootTasks;
         allTasks.addAll(rootTasks);
     }
@@ -180,38 +187,28 @@ public class CpmProcessor {
         Node current = findUnresolvedSuccessorForwardDirection(startingNode)
                 .orElseThrow(() -> new RuntimeException("Starting node should have at least one unresolvedSuccessor"));
         while (true) {
-            if (isNodeValidForForwardCalculation(current) && !current.isResolvedForward()) {
+            if (isNodeValidForForwardCalculation(current)) {
                 calculateEarliestStartAndFinish(current);
-                current.setResolvedForward(true);
-            } else if (!isNodeValidForForwardCalculation(current)) {
-                current = findUnresolvedPredecessorForwardDirection(current);
-                continue;
-            }
-            if (hasNoSuccessors(current)) {
-                Optional<Node> unresolvedNode = nodesByTask.values().stream()
-                        .filter(it -> !it.isResolvedForward())
-                        .findFirst();
-                if (unresolvedNode.isPresent()) {
-                    current = unresolvedNode.get();
-                    continue;
-                } else {
+                if (isTerminalNode(current)) {
                     break;
                 }
+                current = findUnresolvedSuccessorForwardDirection(current)
+                        .orElseThrow(() ->
+                                new RuntimeException("Just calculated Node with successors cannot have resolved successors"));
+                continue;
             }
-            current = findUnresolvedSuccessorForwardDirection(current)
-                    .orElseThrow(() ->
-                            new RuntimeException("Just calculated Node with successors cannot have resolved successors"));
+            current = findUnresolvedPredecessorForwardDirection(current);
         }
         nodesByTask.values().stream().filter(it -> !it.isResolvedForward()).findFirst().ifPresent((brokenNode) -> {
             throw new RuntimeException("All nodes should be in resolved state by now! Broken node:" + brokenNode);
         });
     }
 
-    private boolean hasNoSuccessors(Node node) {
+    private boolean isTerminalNode(Node node) {
         return ObjectUtils.isEmpty(node.getSuccessors());
     }
 
-    private boolean hasNoPredecessors(Node node) {
+    private boolean isStartingNode(Node node) {
         return ObjectUtils.isEmpty(node.getPredecessors());
     }
 
@@ -248,18 +245,22 @@ public class CpmProcessor {
     }
 
     private boolean isNodeValidForForwardCalculation(Node node) {
-        return node.getPredecessors().stream()
+        boolean allPredecessorsResolved = node.getPredecessors().stream()
                 .filter(other -> other.getEarliestFinish() == null)
                 .findFirst()
                 .isEmpty();
+        boolean notYetResolved = !node.isResolvedForward();
+        return allPredecessorsResolved && notYetResolved;
 
     }
 
     private boolean isNodeValidForBackwardCalculation(Node node) {
-        return node.getSuccessors().stream()
+        boolean allSuccessorsResolved = node.getSuccessors().stream()
                 .filter(other -> other.getLatestStart() == null)
                 .findFirst()
                 .isEmpty();
+        boolean notYetResolved = !node.isResolvedBackward();
+        return allSuccessorsResolved && notYetResolved;
 
     }
 
@@ -269,6 +270,7 @@ public class CpmProcessor {
                 .max(Integer::compareTo)
                 .ifPresent(node::setEarliestStart);
         node.setEarliestFinish(node.getDuration() + node.getEarliestStart());
+        node.setResolvedForward(true);
     }
 
     private void calculateLatestStartAndFinish(Node node) {
@@ -278,6 +280,7 @@ public class CpmProcessor {
                 .ifPresent(node::setLatestFinish);
         node.setLatestStart(node.getLatestFinish() - node.getDuration());
         node.setSlack(node.getLatestFinish() - node.getEarliestFinish());
+        node.setResolvedBackward(true);
     }
 
     private void processFromEndingNode(Node endingNode) {
@@ -288,27 +291,17 @@ public class CpmProcessor {
         Node current = findUnresolvedPredecessorBackwardDirection(endingNode)
                 .orElseThrow(() -> new RuntimeException("Ending node should have at least one unresolved predecessor"));
         while (true) {
-            if (isNodeValidForBackwardCalculation(current) && !current.isResolvedBackward()) {
+            if (isNodeValidForBackwardCalculation(current)) {
                 calculateLatestStartAndFinish(current);
-                current.setResolvedBackward(true);
-            } else if (!isNodeValidForBackwardCalculation(current)) {
-                current = findUnresolvedSuccessorBackwardDirection(current);
-                continue;
-            }
-            if (hasNoPredecessors(current)) {
-                Optional<Node> unresolvedNode = nodesByTask.values().stream()
-                        .filter(it -> !it.isResolvedBackward())
-                        .findFirst();
-                if (unresolvedNode.isPresent()) {
-                    current = unresolvedNode.get();
-                    continue;
-                } else {
+                if (isStartingNode(current)) {
                     break;
                 }
+                current = findUnresolvedPredecessorBackwardDirection(current)
+                        .orElseThrow(() ->
+                                new RuntimeException("Just calculated Node with predecessors cannot have resolved predecessors"));
+                continue;
             }
-            current = findUnresolvedPredecessorBackwardDirection(current)
-                    .orElseThrow(() ->
-                            new RuntimeException("Just calculated Node with predecessors cannot have resolved predecessors"));
+            current = findUnresolvedSuccessorBackwardDirection(current);
         }
         nodesByTask.values().stream().filter(it -> !it.isResolvedBackward()).findFirst().ifPresent((brokenNode) -> {
             throw new RuntimeException("All nodes should be in resolved state by now! Broken node:" + brokenNode);

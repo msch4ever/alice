@@ -7,12 +7,13 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class CpmProcessorTest {
 
     @Test
     public void test() {
-        List<Task> tasks = List.of(
+        Set<Task> tasks = Set.of(
                 Task.builder()
                         .taskCode("A")
                         .duration(3)

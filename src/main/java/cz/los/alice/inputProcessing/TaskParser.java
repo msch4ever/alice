@@ -11,7 +11,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 
 @Component
 @RequiredArgsConstructor
@@ -22,7 +24,7 @@ public class TaskParser {
     private final Converter converter;
 
     @SneakyThrows
-    public List<Task> parseInputFile() {
+    public Set<Task> parseInputFile() {
         ObjectMapper objectMapper = new ObjectMapper();
 
         List<ParsedTask> tasks = Arrays.asList(objectMapper.readValue(resourceFile.getFile(), ParsedTask[].class));
@@ -30,7 +32,7 @@ public class TaskParser {
         validateTasksSize(tasks);
         validateHasRootTasks(tasks);
 
-        return tasks.stream().map(converter::toTask).collect(Collectors.toList());
+        return tasks.stream().map(converter::toTask).collect(toSet());
     }
 
     private void validateTasksSize(List<ParsedTask> tasks) {
