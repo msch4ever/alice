@@ -1,10 +1,15 @@
 package cz.los.alice.dto;
 
+import cz.los.alice.cpm.Node;
 import lombok.Value;
+
+import java.util.List;
 
 @Value
 public class ProcessingResult {
 
-    String rawContent;
+    List<Node> criticalPath;
+    Integer mostBusyDay;
+    Integer maxWorkersOnSite;
 
 }

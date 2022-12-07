@@ -5,13 +5,17 @@ import cz.los.alice.model.Crew;
 import cz.los.alice.model.Task;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -32,7 +36,7 @@ public class CpmProcessor {
         this.allTasks = new HashSet<>(allTasks);
     }
 
-    public ProcessingResult applyCpm() {
+    public CpmGraph applyCpm() {
         initRootTasks();
         initTerminalTasks();
 
@@ -47,15 +51,37 @@ public class CpmProcessor {
         graph.calculateCpmMetricsInForwardDirection();
         graph.calculateCpmMetricsInBackwardDirection();
 
-        List<Node> criticalPath = graph.findCriticalPath();
+        return graph;
+    }
 
-        StringBuilder sb = new StringBuilder("The critical path is: ").append(System.lineSeparator());
-        for (var node : criticalPath) {
-            sb.append(node.toString()).append(System.lineSeparator());
+    public List<Node> buildCriticalPath(CpmGraph cpmGraph) {
+        LinkedList<Node> criticalPath = new LinkedList<>();
+        Node current = cpmGraph.getStartNode();
+        while (!cpmGraph.getEndNode().equals(current)) {
+            current.getSuccessors().stream()
+                    .filter(it -> it.getSlack() == 0)
+                    .findFirst()
+                    .ifPresent(criticalPath::add);
+            current = criticalPath.peekLast();
         }
-        System.out.println(sb);
+        return criticalPath;
+    }
 
-        return new ProcessingResult(sb.toString());
+    public Map<Integer, Integer> createWorkersOnSiteStatistics(CpmGraph cpmGraph) {
+        Map<Integer, Integer> workersOnSiteStatistics = new TreeMap<>();
+
+        Collection<Node> allNodes = cpmGraph.getNodesByTask().values();
+
+        int projectDuration = cpmGraph.getEndNode().getLatestFinish();
+
+        for (int day = 0; day <= projectDuration; day++) {
+            int currentDay = day;
+            workersOnSiteStatistics.put(day, allNodes.stream()
+                            .filter(it -> currentDay >= it.getEarliestStart() && currentDay < it.getEarliestFinish())
+                            .map(it -> it.getTask().getCrew().getAssignment())
+                            .reduce(Integer::sum).orElse(0));
+        }
+        return workersOnSiteStatistics;
     }
 
     private void prepareStartingPoint() {

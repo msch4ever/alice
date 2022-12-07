@@ -1,9 +1,9 @@
 package cz.los.alice.cpm;
 
 import cz.los.alice.model.Task;
+import lombok.Getter;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 
 import static cz.los.alice.cpm.CpmProcessor.END;
 import static cz.los.alice.cpm.CpmProcessor.START;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+@Getter
 public class CpmGraph {
 
     private Node startNode;
@@ -70,12 +70,6 @@ public class CpmGraph {
         nodesByTask.values().stream().filter(it -> !it.isResolvedBackward()).findFirst().ifPresent((brokenNode) -> {
             throw new RuntimeException("All nodes should be in resolved state by now! Broken node:" + brokenNode);
         });
-    }
-
-    public List<Node> findCriticalPath() {
-        return nodesByTask.values().stream()
-                .filter(it -> it.getSlack() == 0)
-                .sorted(Comparator.comparing(Node::getEarliestStart)).collect(toList());
     }
 
     private void fillEarliestStartAndFinishForStartNode() {

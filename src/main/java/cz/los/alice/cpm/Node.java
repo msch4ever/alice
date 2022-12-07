@@ -1,5 +1,6 @@
 package cz.los.alice.cpm;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import cz.los.alice.model.Task;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -29,7 +30,9 @@ public class Node {
 
     private Integer slack;
 
+    @JsonIgnore
     private Set<Node> predecessors;
+    @JsonIgnore
     private Set<Node> successors;
 
     public Node(Task task) {
