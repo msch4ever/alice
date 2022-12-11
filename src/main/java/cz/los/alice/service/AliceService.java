@@ -2,6 +2,7 @@ package cz.los.alice.service;
 
 import cz.los.alice.cpm.CpmGraph;
 import cz.los.alice.cpm.CpmProcessor;
+import cz.los.alice.cpm.CpmProcessorFactory;
 import cz.los.alice.model.Task;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,5 @@
-package cz.los.alice.service;
+package cz.los.alice.cpm;
 
-import cz.los.alice.cpm.CpmProcessor;
 import cz.los.alice.model.Crew;
 import cz.los.alice.model.Task;
 import org.springframework.stereotype.Component;

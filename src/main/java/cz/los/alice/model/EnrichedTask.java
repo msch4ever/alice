@@ -21,7 +21,7 @@ public class EnrichedTask implements Comparable<EnrichedTask> {
     }
 
     @Value
-    private static class Interval {
+    public static class Interval {
         Integer from;
         Integer to;
 

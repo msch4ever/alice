@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,11 +46,14 @@ public class CpmProcessor {
         while (!cpmGraph.getEndNode().equals(current)) {
             criticalPath.add(current.getSuccessors().stream()
                     .filter(it -> it.getSlack() == 0)
-                    .findFirst()
+                    .min(Comparator.comparingInt(node -> node.getTask().hashCode()))
                     .orElseThrow(() -> new RuntimeException("Non-ending node should have at least one successor")));
             current = criticalPath.peekLast();
         }
-        return criticalPath.stream().map(node -> node.getTask().getTaskCode()).collect(toList());
+        return criticalPath.stream()
+                .filter(node -> !cpmGraph.getEndNode().equals(node))
+                .map(node -> node.getTask().getTaskCode())
+                .collect(toList());
     }
 
     public Map<Integer, Integer> createWorkersOnSiteStatistics(CpmGraph cpmGraph) {
