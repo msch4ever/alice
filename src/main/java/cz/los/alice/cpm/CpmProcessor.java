@@ -1,30 +1,24 @@
 package cz.los.alice.cpm;
 
-import cz.los.alice.dto.ProcessingResult;
-import cz.los.alice.model.Crew;
+import cz.los.alice.model.EnrichedTask;
 import cz.los.alice.model.Task;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
 
+@Getter
+@Setter
 public class CpmProcessor {
-
-    public static final String START = "START";
-    public static final String END = "END";
 
     private Set<Task> allTasks;
     private Set<Task> rootTasks;
@@ -36,16 +30,7 @@ public class CpmProcessor {
         this.allTasks = new HashSet<>(allTasks);
     }
 
-    public CpmGraph applyCpm() {
-        initRootTasks();
-        initTerminalTasks();
-
-        prepareStartingPoint();
-        prepareFinishPoint();
-
-        buildPredecessorsByTask();
-        buildSuccessorsByTask();
-
+    public CpmGraph buildCpmGraph() {
         CpmGraph graph = new CpmGraph(allTasks, predecessorsByTask, successorsByTask);
 
         graph.calculateCpmMetricsInForwardDirection();
@@ -54,17 +39,17 @@ public class CpmProcessor {
         return graph;
     }
 
-    public List<Node> buildCriticalPath(CpmGraph cpmGraph) {
+    public List<String> buildCriticalPath(CpmGraph cpmGraph) {
         LinkedList<Node> criticalPath = new LinkedList<>();
         Node current = cpmGraph.getStartNode();
         while (!cpmGraph.getEndNode().equals(current)) {
-            current.getSuccessors().stream()
+            criticalPath.add(current.getSuccessors().stream()
                     .filter(it -> it.getSlack() == 0)
                     .findFirst()
-                    .ifPresent(criticalPath::add);
+                    .orElseThrow(() -> new RuntimeException("Non-ending node should have at least one successor")));
             current = criticalPath.peekLast();
         }
-        return criticalPath;
+        return criticalPath.stream().map(node -> node.getTask().getTaskCode()).collect(toList());
     }
 
     public Map<Integer, Integer> createWorkersOnSiteStatistics(CpmGraph cpmGraph) {
@@ -76,100 +61,21 @@ public class CpmProcessor {
 
         for (int day = 0; day <= projectDuration; day++) {
             int currentDay = day;
-            workersOnSiteStatistics.put(day, allNodes.stream()
-                            .filter(it -> currentDay >= it.getEarliestStart() && currentDay < it.getEarliestFinish())
-                            .map(it -> it.getTask().getCrew().getAssignment())
-                            .reduce(Integer::sum).orElse(0));
+            workersOnSiteStatistics.put(currentDay, allNodes.stream()
+                    .filter(it -> currentDay >= it.getEarliestStart() && currentDay < it.getLatestFinish())
+                    .map(it -> it.getTask().getCrew().getAssignment())
+                    .reduce(Integer::sum)
+                    .orElse(0));
         }
         return workersOnSiteStatistics;
     }
 
-    private void prepareStartingPoint() {
-        Task startTask = Task.builder()
-                .taskCode(START)
-                .duration(0)
-                .crew(Crew.builder()
-                        .assignment(0)
-                        .build())
-                .operationName(START)
-                .dependencies(Collections.emptyList())
-                .build();
-        createDependencyOnStartTaskForRootTasks(startTask);
-        allTasks.add(startTask);
+    public List<EnrichedTask> createEnrichedTasks(CpmGraph graph) {
+        return graph.getNodesByTask().values().stream()
+                .filter(it -> !it.equals(graph.getStartNode()) && !it.equals(graph.getEndNode()))
+                .map(Node::getEnrichedTask)
+                .sorted()
+                .collect(Collectors.toList());
     }
 
-    private void createDependencyOnStartTaskForRootTasks(Task startTask) {
-        Set<Task> modifiedRootTasks = new HashSet<>();
-        for (var rootTask : rootTasks) {
-            modifiedRootTasks.add(
-                    rootTask.toBuilder()
-                            .dependencies(List.of(startTask.getTaskCode()))
-                            .build());
-        }
-        allTasks.removeAll(rootTasks);
-        rootTasks = modifiedRootTasks;
-        allTasks.addAll(rootTasks);
-    }
-
-    private void prepareFinishPoint() {
-        Task finishTask = Task.builder()
-                .taskCode(END)
-                .duration(0)
-                .crew(Crew.builder()
-                        .assignment(0)
-                        .build())
-                .operationName(END)
-                .dependencies(terminalTasks.stream()
-                        .map(Task::getTaskCode)
-                        .collect(toList()))
-                .build();
-        allTasks.add(finishTask);
-    }
-
-    private void buildPredecessorsByTask() {
-        predecessorsByTask = new HashMap<>();
-        for (var currentTask : allTasks) {
-            predecessorsByTask
-                    .put(currentTask.getTaskCode(), getPredecessorTasks(currentTask.getDependencies()));
-        }
-    }
-
-    private List<Task> getPredecessorTasks(List<String> dependencies) {
-        List<Task> predecessorTasks = new ArrayList<>();
-        for (String currentCode : dependencies) {
-            allTasks.stream()
-                    .filter(task -> task.getTaskCode().equals(currentCode))
-                    .findFirst()
-                    .ifPresent(predecessorTasks::add);
-        }
-        return predecessorTasks;
-    }
-
-    private void buildSuccessorsByTask() {
-        successorsByTask = allTasks.stream()
-                .collect(toMap(
-                        Task::getTaskCode,
-                        task -> allTasks.stream()
-                                .filter(it -> it.getDependencies().contains(task.getTaskCode()))
-                                .collect(toList())));
-    }
-
-    private void initRootTasks() {
-        this.rootTasks = allTasks.stream()
-                .filter(it -> it.getDependencies().isEmpty())
-                .collect(toSet());
-    }
-
-    private void initTerminalTasks() {
-        this.terminalTasks = allTasks.stream()
-                .filter(it -> {
-                    for (var task : allTasks) {
-                        if (task.getDependencies().contains(it.getTaskCode())) {
-                            return false;
-                        }
-                    }
-                    return true;
-                })
-                .collect(toSet());
-    }
 }

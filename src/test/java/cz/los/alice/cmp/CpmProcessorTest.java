@@ -3,6 +3,7 @@ package cz.los.alice.cmp;
 import cz.los.alice.cpm.CpmProcessor;
 import cz.los.alice.model.Crew;
 import cz.los.alice.model.Task;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -12,6 +13,7 @@ import java.util.Set;
 public class CpmProcessorTest {
 
     @Test
+    @Disabled("original dev runner method")
     public void test() {
         Set<Task> tasks = Set.of(
                 Task.builder()
@@ -72,7 +74,7 @@ public class CpmProcessorTest {
                         .build()
         );
         CpmProcessor cpm = new CpmProcessor(tasks);
-        cpm.applyCpm();
+        cpm.buildCpmGraph();
         assert true;
     }
 

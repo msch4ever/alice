@@ -1,0 +1,45 @@
+[ {
+  "taskCode" : "firstRoot",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ ]
+}, {
+  "taskCode": "secondRoot",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ ]
+}, {
+  "taskCode" : "intermediate",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ "secondRoot", "firstRoot" ]
+}, {
+  "taskCode" : "firstTerminal",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ "intermediate" ]
+} ]

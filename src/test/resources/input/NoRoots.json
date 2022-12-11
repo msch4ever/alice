@@ -1,0 +1,45 @@
+[ {
+  "taskCode" : "firstNotRoot",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ "SHOULD_NOT_HAVE_DEPENDENCY" ]
+}, {
+  "taskCode": "secondNotRoot",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ "SHOULD_NOT_HAVE_DEPENDENCY" ]
+}, {
+  "taskCode" : "intermediate",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ "secondRoot", "firstRoot" ]
+}, {
+  "taskCode" : "firstTerminal",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ "intermediate" ]
+} ]

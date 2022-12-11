@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static cz.los.alice.cpm.CpmProcessor.END;
-import static cz.los.alice.cpm.CpmProcessor.START;
+import static cz.los.alice.service.CpmProcessorFactory.END;
+import static cz.los.alice.service.CpmProcessorFactory.START;
 import static java.util.stream.Collectors.toSet;
 
 @Getter

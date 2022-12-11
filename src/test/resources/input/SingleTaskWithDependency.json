@@ -1,0 +1,12 @@
+[ {
+  "taskCode" : "firstRoot",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ "BAD_DEPENDENCY" ]
+} ]

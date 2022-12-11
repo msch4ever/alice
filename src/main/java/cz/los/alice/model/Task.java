@@ -1,14 +1,18 @@
 package cz.los.alice.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.Value;
 
 import java.util.List;
 
-@Value
+@Data
 @Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Task {
 
@@ -17,9 +21,7 @@ public class Task {
     String taskCode;
     String operationName;
     String elementName;
-    @NonNull
     Integer duration;
-    @NonNull
     Crew crew;
     List<Equipment> equipment;
     @NonNull

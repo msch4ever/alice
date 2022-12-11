@@ -1,21 +1,18 @@
 package cz.los.alice.cpm;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import cz.los.alice.model.EnrichedTask;
 import cz.los.alice.model.Task;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.util.Set;
-import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @ToString(exclude = {"predecessors", "successors"})
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Node {
-
-    @EqualsAndHashCode.Include
-    private UUID id;
 
     private Task task;
     private Integer duration;
@@ -36,7 +33,6 @@ public class Node {
     private Set<Node> successors;
 
     public Node(Task task) {
-        this.id = UUID.randomUUID();
         this.task = task;
         this.duration = task.getDuration();
     }
@@ -82,5 +78,9 @@ public class Node {
                 .findFirst()
                 .isEmpty();
         return allSuccessorsResolved;
+    }
+
+    public EnrichedTask getEnrichedTask() {
+        return new EnrichedTask(task, earliestStart, latestStart, earliestFinish, latestFinish);
     }
 }

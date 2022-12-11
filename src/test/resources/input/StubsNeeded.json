@@ -1,0 +1,35 @@
+[ {
+  "taskCode" : "NO_CREW",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "equipment" : [ ],
+  "dependencies" : [ ]
+}, {
+  "taskCode": "secondRoot",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "duration" : 16,
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ ]
+}, {
+  "taskCode" : "NO_CREW_AND_DURATION",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "equipment" : [ ],
+  "dependencies" : [ "secondRoot", "firstRoot" ]
+}, {
+  "taskCode" : "NO_DURATION",
+  "operationName" : "operationName",
+  "elementName" : "elementName",
+  "crew" : {
+    "name" : "name",
+    "assignment" : 1
+  },
+  "equipment" : [ ],
+  "dependencies" : [ "intermediate" ]
+} ]

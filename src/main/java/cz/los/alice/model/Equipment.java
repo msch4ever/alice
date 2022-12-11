@@ -1,11 +1,15 @@
 package cz.los.alice.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Value
+@Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Equipment {
-    String name;
-    Integer quantity;
+    private String name;
+    private Integer quantity;
 }
