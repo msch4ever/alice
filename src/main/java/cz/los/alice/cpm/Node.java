@@ -9,6 +9,10 @@ import lombok.ToString;
 
 import java.util.Set;
 
+/**
+ * A node of the bidirectional Graph that contains info of earliest and latest start and end days for this {@link #task}
+ * Links between nodes are represented by {@link #predecessors} and {@link #successors}
+ */
 @Getter
 @Setter
 @ToString(exclude = {"predecessors", "successors"})
@@ -37,6 +41,15 @@ public class Node {
         this.duration = task.getDuration();
     }
 
+    /**
+     * Calculates the earliest start and finish days for this node.
+     * The node is valid for this calculation if all predecessors of this node are already resolved in
+     * forward direction - which means all predecessors of this node already have the earliest start and finish
+     * calculated. If the node has more than one predecessor, the maximum value of the earliest finish among
+     * all the predecessors will be used to calculate values for this node.
+     * @return true - if calculation of the earliest start and finish happened, false - if calculation of the earliest
+     * start and finish is impossible
+     */
     public boolean calculateEarliestStartAndFinish() {
         if (isValidForForwardCalculation()) {
             predecessors.stream()
@@ -50,6 +63,15 @@ public class Node {
         return false;
     }
 
+    /**
+     * Calculates the latest start and finish days for this node.
+     * The node is valid for this calculation if all successors of this node are already resolved in
+     * backward direction - which means all successors of this node already have the latest start and finish
+     * calculated. If the node has more than one successor, the minimum value of the latest start among
+     * all the successors will be used to calculate values for this node.
+     * @return true - if calculation of the latest start and finish happened, false - if calculation of the latest
+     * start and finish is impossible
+     */
     public boolean calculateLatestStartAndFinish() {
         if (isValidForBackwardCalculation()) {
             successors.stream()
@@ -80,6 +102,10 @@ public class Node {
         return allSuccessorsResolved;
     }
 
+    /**
+     * @return a new instance of {@link EnrichedTask} created using this nodes {@link #task} and the earliest and
+     * the latest start and finish days.
+     */
     public EnrichedTask getEnrichedTask() {
         return new EnrichedTask(task, earliestStart, latestStart, earliestFinish, latestFinish);
     }

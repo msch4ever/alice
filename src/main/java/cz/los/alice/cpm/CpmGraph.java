@@ -15,6 +15,12 @@ import static cz.los.alice.cpm.CpmProcessorFactory.END;
 import static cz.los.alice.cpm.CpmProcessorFactory.START;
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * This class is a bidirectional graph with single starting and ending points.<br>
+ * {@link #startNode} - {@link Node} that has a pseudo-task called START. It is linked to all RootTasks in forward direction<br>
+ * {@link #endNode} - {@link Node} that has a pseudo-task called END. It is linked to all TerminalTasks in backward direction<br>
+ * {@link #nodesByTask} - {@link Map} that groups Nodes by corresponding Task. Used for faster navigation in Graph
+ */
 @Getter
 public class CpmGraph {
 
@@ -30,6 +36,24 @@ public class CpmGraph {
         initStartAndEndNodes();
     }
 
+    /**
+     * Performs a forward traversal of the graph, starting from {@link #startNode} and calculating earliest start and
+     * end time of the Task<br>
+     * The algorithm is the following:<br>
+     * Starting with the {@link #startNode} as a current node it searches for a successor that is not resolved yet.
+     * As we start from the pseudo-task START its Node is by default already resolved, all successors of starting node
+     * can be calculated. The algorithm will try to resolve the current Node. The current node is eligible for
+     * calculation if the following condition is met - all predecessors of this graph Node have to be resolved
+     * in forward direction - that is, all predecessors have to have the earliest end already calculated. If it is met,
+     * the earliest start and end of current node will be calculated, and it will be marked as resolved in forward
+     * direction. Then it tries to find an unresolved successor. If such successor is found, it becomes the current Node
+     * for the next iteration of the loop. If and attempt to resolve the current node failed, it means that the
+     * condition of eligibility for calculation was not met. In this case the algorithm will find a not resolved
+     * predecessor and make it the current Node for the next iteration of the loop.
+     * The condition to jump out from the loop is to reach the {@link #endNode} and resolve it.
+     * By the end of this method all nodes in Graph should be in "resolved in forward direction" state, otherwise
+     * a runtime exception will be thrown indicating that something went wrong
+     */
     public void calculateCpmMetricsInForwardDirection() {
         fillEarliestStartAndFinishForStartNode();
         Node current = findUnresolvedSuccessorForwardDirection(startNode)
@@ -51,6 +75,24 @@ public class CpmGraph {
         });
     }
 
+    /**
+     * Performs a backward traversal of the graph, starting from {@link #endNode} and calculating earliest start and
+     * end time of the Task<br>
+     * The algorithm is the following:<br>
+     * Starting with the {@link #endNode} as a current node it searches for a predecessor that is not resolved yet.
+     * As we start from the pseudo-task END its Node is by default already resolved, all predecessors of ending node
+     * can be calculated. The algorithm will try to resolve the current Node. The current node is eligible for
+     * calculation if the following condition is met - all successors of this graph Node have to be resolved
+     * in backward direction - that is, all successors have to have the latest start already calculated. If it is met,
+     * the latest start and end of current node will be calculated, and it will be marked as resolved in backward
+     * direction. Then it tries to find an unresolved predecessor. If such predecessor is found, it becomes the current
+     * Node for the next iteration of the loop. If and attempt to resolve the current node failed, it means that the
+     * condition of eligibility for calculation was not met. In this case the algorithm will find a not resolved
+     * successor and make it the current Node for the next iteration of the loop.
+     * The condition to jump out from the loop is to reach the {@link #startNode} and resolve it.
+     * By the end of this method all nodes in Graph should be in "resolved in backward direction" state, otherwise
+     * a runtime exception will be thrown indicating that something went wrong
+     */
     public void calculateCpmMetricsInBackwardDirection() {
         fillLatestStartAndFinishForEndNode();
         Node current = findUnresolvedPredecessorBackwardDirection(endNode)
@@ -118,6 +160,13 @@ public class CpmGraph {
                 .orElseThrow(() -> new RuntimeException("Unresolved Node should have unresolved successor"));
     }
 
+    /**
+     * Links each {@link Node} of the graph by filling up lists of predecessor and successor Nodes
+     * @param predecessorsByTask - Map with key that is a Task code and value representing List of tasks that this task
+     *                           depend on
+     * @param successorsByTask - Map with key that is a Task code and value representing List of tasks that depend on
+     *                         this task
+     */
     private void createNodeDependencies(Map<String, List<Task>> predecessorsByTask,
                                         Map<String, List<Task>> successorsByTask) {
         for (var currentNode : nodesByTask.values()) {

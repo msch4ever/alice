@@ -2,6 +2,11 @@ package cz.los.alice.model;
 
 import lombok.Value;
 
+/**
+ * This class represents a {@link Task} that is enriched with startInterval and endInterval<br>
+ * {@link EnrichedTask#statInterval} - a range of days the task can be started without increasing the duration of the project<br>
+ * {@link EnrichedTask#endInterval} -a range of days the task can be finished without increasing the duration of the project<br>
+ */
 @Value
 public class EnrichedTask implements Comparable<EnrichedTask> {
 
